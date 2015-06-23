@@ -119,6 +119,9 @@ class LogStash::Outputs::HDFS < LogStash::Outputs::Base
       dfs_data_output_stream = @hdfs.create(path)
     end
 
+    # consider varying zip entry's name
+    # solve appending issue
+    # solve closing issue
     if gzip
       dfs_data_output_stream = ZipOutputStream.new(dfs_data_output_stream)
       dfs_data_output_stream.putNextEntry(ZipEntry.new("output.log"))
