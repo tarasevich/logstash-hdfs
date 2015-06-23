@@ -44,6 +44,7 @@ class LogStash::Outputs::HDFS < LogStash::Outputs::Base
     java_import "org.apache.hadoop.fs.Path"
     java_import "org.apache.hadoop.fs.FileSystem"
     java_import "org.apache.hadoop.conf.Configuration"
+    java_import "java.io.IOException"
     java_import "java.util.zip.ZipOutputStream"
     java_import "java.util.zip.ZipEntry"
 
@@ -126,7 +127,7 @@ class LogStash::Outputs::HDFS < LogStash::Outputs::Base
       dfs_data_output_stream = ZipOutputStream.new(dfs_data_output_stream)
       dfs_data_output_stream.putNextEntry(ZipEntry.new("output.log"))
     end
-    @files[path_string] = DFSOutputStreamWrapper.new(dfs_data_output_stream)
+    @files[path_string] = DFSOutputStreamWrapper.new(dfs_data_output_stream, @logger)
   end
 
   def flush(fd)
@@ -202,13 +203,14 @@ class LogStash::Outputs::HDFS < LogStash::Outputs::Base
       FLUSH_METHOD = :flush
     end
     attr_accessor :active
-    def initialize(output_stream)
+    def initialize(output_stream, logger)
       @output_stream = output_stream
+      @logger = logger
     end
     def close
       @output_stream.close
     rescue IOException => e
-      logger.error("Failed to close file", :exception => e)
+      @logger.error("Failed to close file", :exception => e)
     end
     def flush
       if FLUSH_METHOD == :hflush
