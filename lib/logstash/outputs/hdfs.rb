@@ -35,12 +35,17 @@ class LogStash::Outputs::HDFS < LogStash::Outputs::Base
   # The classpath resource locations of the hadoop configuration
   config :hadoop_config_resources, :validate => :array
 
+  # Gzip the output stream before writing to disk.
+  config :gzip, :validate => :boolean, :default => false
+
   public
   def register
     require "java"
     java_import "org.apache.hadoop.fs.Path"
     java_import "org.apache.hadoop.fs.FileSystem"
     java_import "org.apache.hadoop.conf.Configuration"
+    java_import "java.util.zip.ZipOutputStream"
+    java_import "java.util.zip.ZipEntry"
 
     @files = {}
     now = Time.now
@@ -112,6 +117,11 @@ class LogStash::Outputs::HDFS < LogStash::Outputs::Base
       end
     else
       dfs_data_output_stream = @hdfs.create(path)
+    end
+
+    if gzip
+      dfs_data_output_stream = ZipOutputStream.new(dfs_data_output_stream)
+      dfs_data_output_stream.putNextEntry(ZipEntry.new("output.log"))
     end
     @files[path_string] = DFSOutputStreamWrapper.new(dfs_data_output_stream)
   end
